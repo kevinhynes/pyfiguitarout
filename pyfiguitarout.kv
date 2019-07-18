@@ -1,0 +1,19 @@
+Main:
+    BoxLayout:
+        orientation: "vertical"
+        RelativeLayout:
+            Button:
+                text: "DUDE!"
+                size_hint: [0.25, 0.5]
+                pos_hint: {'center_x': 0.25, 'center_y': 0.5}
+                on_press: self.text = str(({"DUDE!", "SWEET!"} ^ {self.text}).pop())
+            Button:
+                text: "PLAY"
+                size_hint: [0.25, 0.5]
+                pos_hint: {'center_x': 0.75, 'center_y': 0.5}
+                on_press: fretboard.play_song(self)
+        Fretboard:
+            id: fretboard
+            size_hint_y: None
+            size_hint_x: 0.9
+            height: self.width / 3
