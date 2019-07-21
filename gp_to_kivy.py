@@ -3,47 +3,49 @@ from math import isclose
 import heapq
 from collections import Counter
 
+chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
+
 class KivyBeat:
     def __init__(self, seconds: float, frets: list, notes: list=None):
         self.seconds = seconds
         self.frets = frets
         self.notes = notes
 
-
-class KivySongBuilder:
-    def __init__(self, file="tgr-nm-01-g1.gp5"):
+class GPReader:
+    def __init__(self, file):
         self.gp_song = guitarpro.parse(file)
         self.gp_key_sig = self._gp_key_sig_parser(self.gp_song)
         self.gp_tunings = self._gp_tuning_parser(self.gp_song)
-        self._build_song()
-        self.key_sigs_per_measure = self._detect_song_key_signatures()
-        self.note_counts = self._note_counter()
-        # Might not need functions associated with all_beats_captured.
-        self.all_beats_captured = self._sum_and_check_song()
 
     def _gp_tuning_parser(self, gp_song):
-        chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
-        tunings = []
+        gp_tunings = []
         for track in gp_song.tracks:
             tuning = []
             for string in track.strings:
                 octave, open_string = divmod(string.value, 12)
                 note = chrom_scale[open_string]
                 tuning.append([string.number, note])
-            tunings.append(tuning[:])
-        return tunings
+            gp_tunings.append(tuning[:])
+        return gp_tunings
 
     def _gp_key_sig_parser(self, gp_song):
         circ_of_fifths_maj = ["C", "G", "D", "A", "E", "B", "F#/Gb", "C#/Db", "G#/Ab", "D#/Eb",
-                              "A#/Bb",
-                              "F"]
-        circ_of_fifths_min = ["A", "E", "B", "F#/Gb", "C#/Db", "G#/Ab", "D#/Eb", "A#/Bb", "F", "C",
-                              "G",
-                              "D"]
+                              "A#/Bb", "F"]
+        circ_of_fifths_min = ["A", "E", "B", "F#/Gb", "C#/Db", "G#/Ab", "D#/Eb", "A#/Bb", "F",
+                              "C", "G", "D"]
         circ_of_fifths = [circ_of_fifths_maj, circ_of_fifths_min]
         modes = ["Major", "Minor"]
         pos, mode = gp_song.key.value
         return circ_of_fifths[mode][pos], modes[mode]
+
+class KivySongBuilder(GPReader):
+    def __init__(self, file):
+        super().__init__(file)
+        self.song, self.song_data = self._build_song()
+        self.key_sigs_per_measure = self._detect_song_key_signatures()
+        self.note_counts = self._note_counter()
+        # Might not need functions associated with all_beats_captured.
+        self.all_beats_captured = self._sum_and_check_song()
 
     def _build_song(self):
         '''
@@ -60,7 +62,7 @@ class KivySongBuilder:
             track, track_data = self._build_track(track)
             song.append(track)
             song_data.append(track_data)
-        self.song, self.song_data = song, song_data
+        return song, song_data
 
     def _build_track(self, gp_track):
         '''Build list of each beat's length in seconds (including rests).
@@ -82,14 +84,9 @@ class KivySongBuilder:
 
         TODO:
             - Flatten voices into one track? Safe to ignore completely? Create two "voice tracks" per
-            track? This will mean every kivy fretboard will need input for 2 "voice tracks"?  Currently
-            the only way to have notes last for different beat lengths (i.e quarter note and eight note
-            starting at the same time... letting a note "ring out"). Strings could schedule their own
-            call backs?  Then I'd need a list of lists for track beats.  Each sublist representing all
-            the track_beats for that string only.
+            track? This will mean every kivy fretboard will need input for 2 "voice tracks"?
             - Figure out what's up with Measure.MeasureHeader.repeatAlternative.. maybe use GPX branch?
         '''
-        chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
         track, track_data = [], []
         measure, repeat_group_data = [], []
 
@@ -117,7 +114,7 @@ class KivySongBuilder:
                 # If we're starting a repeat group, let measure build until its closed.
                 if gp_measure.header.isRepeatOpen:
                     continue
-                # Else if we're closing a measure, multiply it by number of repeats and clear it.
+                # Elif we're closing a measure, multiply it by number of repeats and clear it.
                 elif gp_measure.header.repeatClose > 0:
                     measure[:] = measure[:] * gp_measure.header.repeatClose
                     track.extend(measure)
@@ -137,15 +134,15 @@ class KivySongBuilder:
         return track, track_data
 
     @property
-    def length(self):
-        lengths = []
+    def track_lengths(self):
+        track_lengths = []
         for track in self.song:
             seconds = 0
             for beat in track:
                 seconds += beat.seconds
             min, sec = str(int(seconds // 60)), str(int(seconds % 60))
-            lengths.append(min + ":" + sec)
-        return lengths
+            track_lengths .append(min + ":" + sec)
+        return track_lengths
 
     def print_song(self):
         for i, track in enumerate(self.song):
@@ -256,7 +253,6 @@ class KivySongBuilder:
 
     def _detect_track_key_signatures(self, gp_track):
         track_keys = []
-        chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
         note_filter = {
             "C":     0b100000000000,
             "C#/Db": 0b010000000000,
@@ -323,7 +319,6 @@ class KivySongBuilder:
         return track_keys
 
     def _note_counter(self):
-        chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
         note_counts = []
         for track in self.song:
             track_note_counts, track_note_seconds = {n: 0 for n in chrom_scale}, {n: 0 for n in chrom_scale}
@@ -539,7 +534,7 @@ def test_key_sig_A_star():
             for nbr, min_cost_so_far in graph[-measure_idx+1].items():
                 edge_cost = bin(cur_mode^nbr).count("1")
                 if path_cost + edge_cost < min_cost_so_far:
-                    # 9 results without =, 338,000 results with = ...
+                    # 9 results without =, 338,000 results with =...
                     graph[-measure_idx+1][nbr] = path_cost + edge_cost
                     next_node = (path_cost+edge_cost, measure_idx-1, nbr, path+[nbr])
                     heapq.heappush(pqueue, next_node)
@@ -560,8 +555,8 @@ def test_key_sig_A_star():
 
 # TODO: Clean this up:
 # Exports for kivy_app.py (plays track 1).
-song = KivySongBuilder()
-track = song.song[0]
-strings = song.gp_song.tracks[0].strings
+# song = KivySongBuilder()
+# track = song.song[0]
+# strings = song.gp_song.tracks[0].strings
 
 

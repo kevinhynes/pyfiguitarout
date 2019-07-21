@@ -2,7 +2,7 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.label import Label
 from kivy.clock import Clock, ClockBaseInterrupt
 from kivy.graphics import Rectangle, Color
@@ -11,33 +11,58 @@ from kivy.config import Config
 # Config.set("graphics", "maxfps", 90)
 # ClockBaseInterrupt.interrupt_next_only = False
 
-import guitarpro
-from gp_to_kivy import track, strings
+from gp_to_kivy import KivySongBuilder
 from music_theory import key_sig_color_map
 import time, os
 
+
 class Main(FloatLayout):
-    pass
+    song = ObjectProperty(None)
+
+    def dismiss_popup(self):
+        self._popup.dismiss()
+
+    def show_load(self):
+        content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
+        self._popup = Popup(title="Load File", content=content, size_hint=(0.9, 0.9))
+        self._popup.open()
+
+    def load(self, filepath):
+        print("Main.load()... filepath: {}".format(filepath))
+        self.song = KivySongBuilder(filepath[0])
+        self.dismiss_popup()
+
+
+class LoadDialog(FloatLayout):
+    load = ObjectProperty(None)
+    cancel = ObjectProperty(None)
+
 
 class Fretboard(BoxLayout):
+    song = ObjectProperty(None)
+    tracks = ObjectProperty(None)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.orientation = "vertical"
-        self.spacing = 2
-        self.pos_hint = {"center_x": 0.5, "center_y": 0.5}
-        for string in strings:
-            self.add_widget(String(num=string.number, note_val=string.value))
         self.beat_num = 0
+        for string in range(6):
+            self.add_widget(String(num=string, note_val=0))
+
+    def on_song(self, arg1, arg2):
+        self.clear_widgets()
+        self.tracks = self.song.song
+        for string in self.song.gp_song.tracks[0].strings:
+            self.add_widget(String(num=string.number, note_val=string.value))
 
     def play_song(self, instance):
-        import spt_connect_user  # Terrible... but this is starting playback of spotify track
+        # import spt_connect_user  # Terrible... but this is starting playback of spotify track
         self.start = time.time()
         self._play_song()
 
     def _play_song(self, instance=None):
-        beat = track[self.beat_num]
+        beat = self.tracks[0][self.beat_num]
         self.beat_num += 1
-        if self.beat_num == len(track):
+        if self.beat_num == len(self.tracks[0]):
             print("Total Time: ", time.time() - self.start)
             return
         self.play_beat(beat.frets)
@@ -54,11 +79,11 @@ class Fretboard(BoxLayout):
 class String(BoxLayout):
     def __init__(self, num, note_val, **kwargs):
         super(String, self).__init__(**kwargs)
-        self.num = num
-        self.note_val = note_val
         self.orientation = "horizontal"
         self.size_hint_y = 1/6
         self.spacing = 4
+        self.num = num
+        self.note_val = note_val
         fret_colors = {
             "red": [1, 0, 0, 1],
             "orange": [1, 0.5, 0, 1],
@@ -116,8 +141,9 @@ class Fret(Label):
             self.canvas.add(Rectangle(size=self.size, pos=self.pos))
 
 
-class PyFiGUItaroutApp(App):
+class PyFiGUItarOutApp(App):
     pass
 
+
 if __name__ == '__main__':
-    PyFiGUItaroutApp().run()
+    PyFiGUItarOutApp().run()

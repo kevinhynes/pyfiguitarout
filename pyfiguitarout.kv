@@ -1,12 +1,14 @@
+#: import os os
+
 Main:
     BoxLayout:
         orientation: "vertical"
         RelativeLayout:
             Button:
-                text: "DUDE!"
+                text: "LOAD SONG"
                 size_hint: [0.25, 0.5]
                 pos_hint: {'center_x': 0.25, 'center_y': 0.5}
-                on_press: self.text = str(({"DUDE!", "SWEET!"} ^ {self.text}).pop())
+                on_press: root.show_load()
             Button:
                 text: "PLAY"
                 size_hint: [0.25, 0.5]
@@ -14,6 +16,30 @@ Main:
                 on_press: fretboard.play_song(self)
         Fretboard:
             id: fretboard
+            song: root.song
+            orientation: "vertical"
             size_hint_y: None
             size_hint_x: 0.9
+            spacing: 2
+            pos_hint: {"center_x": 0.5, "center_y": 0.5}
             height: self.width / 3
+
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+            path: os.getcwd()
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.selection)
