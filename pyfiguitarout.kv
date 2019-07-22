@@ -1,4 +1,26 @@
 #: import os os
+#:import utils kivy.utils
+
+
+<Fretboard>:
+    orientation: "vertical"
+    size_hint_x: 0.9
+    size_hint_y: None
+    height: self.width / 4
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    spacing: 5
+
+<String>:
+    size: self.size
+    pos: self.pos
+    FloatLayout:
+        canvas:
+            Color:
+                rgba: [1, 0, 0, 1]
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
 
 Main:
     BoxLayout:
@@ -17,12 +39,9 @@ Main:
         Fretboard:
             id: fretboard
             song: root.song
-            orientation: "vertical"
-            size_hint_y: None
-            size_hint_x: 0.9
-            spacing: 2
-            pos_hint: {"center_x": 0.5, "center_y": 0.5}
-            height: self.width / 3
+
+
+
 
 <LoadDialog>:
     BoxLayout:

@@ -1,0 +1,31 @@
+#:import utils kivy.utils
+
+<Fretboard>:
+    orientation: "vertical"
+    size_hint_x: 0.9
+    size_hint_y: None
+    height: self.width / 4
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    spacing: 5
+    canvas:
+        Color:
+#            rgb: utils.get_color_from_hex('#964b00')
+            rgba: [0, 0, 0.75, 0.5]
+		Rectangle:
+			pos: self.pos
+			size: self.size
+	String:
+	String:
+	String:
+	String:
+	String:
+	String:
+
+<String>:
+    size_hint: [1, 1/6]
+#    canvas:
+#        Color:
+#            rgba: [0, 0, 0.75, 0.5]
+#		Rectangle:
+#			pos: self.pos
+#			size: self.size
