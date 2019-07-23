@@ -4,6 +4,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle, Ellipse
 from kivy.graphics.instructions import InstructionGroup
+import random
 
 class Fretboard(BoxLayout):
     def __init__(self, *args, **kwargs):
@@ -60,7 +61,7 @@ class Fretboard(BoxLayout):
 
     def _update_inlays(self):
         self.inlays.clear()
-        self.inlays.add(Color(0,0,0,1))
+        self.inlays.add(Color(0, 0, 0, 1))
 
         d = self.height * 0.075
         for i, fret_range in enumerate(self.fret_ranges):
@@ -79,17 +80,38 @@ class Fretboard(BoxLayout):
         self.canvas.after.add(self.inlays)
 
 
-
 class String(Widget):
     def __init__(self, *args, **kwargs):
         super().__init__(* args, **kwargs)
+        self.bind(size=self._update_string, pos=self._update_string)
+
+    def _update_string(self, instance, value):
+        self._update_note()
+        self._update_background()
+
+    def _update_background(self):
+        self.background.pos = self.pos
+        self.background.size = self.size
+
+    def _update_note(self, fret_num=random.randrange(25)):
+        print("String._update_note", self.parent.fret_ranges)
+        left, right = self.parent.fret_ranges[fret_num]
+        width = right - left
+        x_pos = left + (width / 2)
+        self.canvas.clear()
+        with self.canvas:
+            Color(1, 0, 0, 0.5)
+            self.background = Rectangle(size=self.size, pos=self.pos)
+            Color(1, 1, 1, 0.5)
+            self.note = Rectangle(size=[width, self.height], pos=[x_pos, self.y])
 
 
-class ScratchApp(App):
+
+class FretlessApp(App):
     def build(self):
         fretboard = Fretboard()
         return fretboard
 
 
 if __name__ == "__main__":
-    ScratchApp().run()
+    FretlessApp().run()
