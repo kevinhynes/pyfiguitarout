@@ -6,15 +6,19 @@ from kivy.graphics import Color, Rectangle, Ellipse
 from kivy.graphics.instructions import InstructionGroup
 import random
 
+
 class Fretboard(BoxLayout):
     def __init__(self, *args, **kwargs):
         super().__init__(* args, **kwargs)
         self.fret_bars = InstructionGroup()
         self.inlays = InstructionGroup()
         with self.canvas:
-            Color(1, 1, 1, 0.5)
+            Color(0, 0, 0.75, 0.5)
             self.background = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_canvas, pos=self._update_canvas)
+
+        for string in range(1, 7):
+            self.add_widget(String(id=str(string)))
 
     def _update_canvas(self, instance, value):
         # instance is self, value is bound value that changed (size or pos).
@@ -77,34 +81,36 @@ class Fretboard(BoxLayout):
                 y_pos2 = 2*(self.height / 3) + self.y
                 self.inlays.add(Ellipse(size=[d, d], pos=[x_pos - d / 2, y_pos1 - d / 2]))
                 self.inlays.add(Ellipse(size=[d, d], pos=[x_pos - d / 2, y_pos2 - d / 2]))
-        self.canvas.after.add(self.inlays)
+        self.canvas.add(self.inlays)
 
 
 class String(Widget):
     def __init__(self, *args, **kwargs):
         super().__init__(* args, **kwargs)
-        self.bind(size=self._update_string, pos=self._update_string)
-
-    def _update_string(self, instance, value):
-        self._update_note()
-        self._update_background()
-
-    def _update_background(self):
-        self.background.pos = self.pos
-        self.background.size = self.size
-
-    def _update_note(self, fret_num=random.randrange(25)):
-        print("String._update_note", self.parent.fret_ranges)
-        left, right = self.parent.fret_ranges[fret_num]
-        width = right - left
-        x_pos = left + (width / 2)
-        self.canvas.clear()
+        self.active_fret = 10
+        self.active_rect = InstructionGroup()
         with self.canvas:
             Color(1, 0, 0, 0.5)
             self.background = Rectangle(size=self.size, pos=self.pos)
-            Color(1, 1, 1, 0.5)
-            self.note = Rectangle(size=[width, self.height], pos=[x_pos, self.y])
+        self.bind(size=self._update_canvas, pos=self._update_canvas)
 
+    def _update_canvas(self, instance, value):
+        self._update_background(instance, value)
+        self._update_note(instance, value)
+
+    def _update_background(self, instance, value):
+        self.background.pos = self.pos
+        self.background.size = self.size
+
+    def _update_note(self, instance, value):
+        print("String._update_note", self.height)
+        self.active_rect.clear()
+        self.active_rect.add(Color(1, 1, 1, 0.5))
+        left, right = self.parent.fret_ranges[self.active_fret]
+        width = right - left
+        x_pos = left
+        self.active_rect.add(Rectangle(size=[width, self.height], pos=[x_pos, self.y]))
+        self.canvas.add(self.active_rect)
 
 
 class FretlessApp(App):

@@ -11,15 +11,12 @@
     spacing: 5
 
 <String>:
-    size: self.size
-    pos: self.pos
-    FloatLayout:
-        canvas:
-            Color:
-                rgba: [1, 0, 0, 0.5]
-            Rectangle:
-                pos: self.pos
-                size: self.size
+    canvas:
+        Color:
+            rgba: [1, 0, 0, 0.5]
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
 
 Main:
@@ -39,8 +36,6 @@ Main:
         Fretboard:
             id: fretboard
             song: root.song
-
-
 
 
 <LoadDialog>:
