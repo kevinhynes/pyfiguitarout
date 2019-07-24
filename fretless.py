@@ -2,23 +2,53 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
+from kivy.uix.popup import Popup
+from kivy.properties import ObjectProperty
 from kivy.graphics import Color, Rectangle, Ellipse
 from kivy.graphics.instructions import InstructionGroup
-import random
+from kivy.clock import Clock
+from kivy.config import Config
+Config.set('graphics', 'width', '800')
+Config.set('graphics', 'height', '300')
+
+from gp_to_kivy import KivySongBuilder
+import random, time
+
+
+class Main(BoxLayout):
+    song = ObjectProperty(None)
+
+    def dismiss_popup(self):
+        self._popup.dismiss()
+
+    def show_load(self):
+        content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
+        self._popup = Popup(title="Load File", content=content, size_hint=(0.9, 0.9))
+        self._popup.open()
+
+    def load(self, filepath):
+        print("Main.load()... filepath: {}".format(filepath))
+        self.song = KivySongBuilder(filepath[0])
+        self.dismiss_popup()
+
+
+class LoadDialog(FloatLayout):
+    load = ObjectProperty(None)
+    cancel = ObjectProperty(None)
 
 
 class Fretboard(BoxLayout):
+    song = ObjectProperty(None)
+
     def __init__(self, *args, **kwargs):
-        super().__init__(* args, **kwargs)
+        super().__init__(**kwargs)
         self.fret_bars = InstructionGroup()
         self.inlays = InstructionGroup()
+        self.beat_num = 0
         with self.canvas:
             Color(0, 0, 0.75, 0.5)
             self.background = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_canvas, pos=self._update_canvas)
-
-        for string in range(1, 7):
-            self.add_widget(String(id=str(string)))
 
     def _update_canvas(self, instance, value):
         # instance is self, value is bound value that changed (size or pos).
@@ -48,7 +78,7 @@ class Fretboard(BoxLayout):
         actual_fret_positions = [fret_pos*self.width + self.x for fret_pos in stretched_fret_positions]
 
         self.fret_bars.clear()
-        self.fret_bars.add(Color(0,0,0,1))
+        self.fret_bars.add(Color(0, 0, 0, 1))
         for fret_pos in actual_fret_positions:
             self.fret_bars.add(Rectangle(size=[self.fret_bar_width, self.height], pos=[fret_pos, self.y]))
         self.canvas.add(self.fret_bars)
@@ -56,7 +86,7 @@ class Fretboard(BoxLayout):
         self.fret_bar_positions = actual_fret_positions
 
     def _update_fret_ranges(self):
-        start = 0
+        start = self.x
         fret_ranges = []
         for fret_pos in self.fret_bar_positions:
             fret_ranges.append((start, fret_pos))
@@ -67,7 +97,7 @@ class Fretboard(BoxLayout):
         self.inlays.clear()
         self.inlays.add(Color(0, 0, 0, 1))
 
-        d = self.height * 0.075
+        d = self.height * 0.15
         for i, fret_range in enumerate(self.fret_ranges):
             # Single circular inlay.
             if i in range(3, 10, 2) or i in range(15, 25, 2):
@@ -83,14 +113,40 @@ class Fretboard(BoxLayout):
                 self.inlays.add(Ellipse(size=[d, d], pos=[x_pos - d / 2, y_pos2 - d / 2]))
         self.canvas.add(self.inlays)
 
+    def play_notes(self):
+        for string in range(1, 7):
+            fret_num = random.randrange(25)
+            self.ids[str(string)].play_note(fret_num)
+
+    def play_song(self):
+        # import spt_connect_user  # Terrible... but this is starting playback of spotify track
+        track1 = self.song.song[0]
+        self.track = track1
+        self.start = time.time()
+        self._play_song()
+
+    def _play_song(self, seconds=None):
+        # Clock will pass beat.seconds as an argument, it is not needed.
+        beat = self.track[self.beat_num]
+        self.beat_num += 1
+        if self.beat_num == len(self.track):
+            print("Total Time: ", time.time() - self.start)
+            return
+        self._play_beat(beat.frets)
+        Clock.schedule_once(self._play_song, beat.seconds)
+
+    def _play_beat(self, frets):
+        for i, fret_num in enumerate(frets, 1):
+            self.ids[str(i)]._play_note(fret_num)
+
 
 class String(Widget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(* args, **kwargs)
-        self.active_fret = 10
+    def __init__(self, active_fret=0, *args, **kwargs):
+        super().__init__(**kwargs)
+        self.active_fret = active_fret
         self.active_rect = InstructionGroup()
         with self.canvas:
-            Color(1, 0, 0, 0.5)
+            Color(0, 0, 0, 0)
             self.background = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_canvas, pos=self._update_canvas)
 
@@ -103,20 +159,26 @@ class String(Widget):
         self.background.size = self.size
 
     def _update_note(self, instance, value):
-        print("String._update_note", self.height)
-        self.active_rect.clear()
-        self.active_rect.add(Color(1, 1, 1, 0.5))
         left, right = self.parent.fret_ranges[self.active_fret]
         width = right - left
         x_pos = left
+        self.active_rect.clear()
+        self.active_rect.add(Color(1, 1, 1, 0.5))
         self.active_rect.add(Rectangle(size=[width, self.height], pos=[x_pos, self.y]))
         self.canvas.add(self.active_rect)
+
+    def _play_note(self, fret_num):
+        if fret_num is None:
+            self.active_rect.clear()
+            return
+        self.active_fret = fret_num
+        self._update_note(None, None)
 
 
 class FretlessApp(App):
     def build(self):
-        fretboard = Fretboard()
-        return fretboard
+        main = Main()
+        return main
 
 
 if __name__ == "__main__":

@@ -1,25 +1,81 @@
-#:import utils kivy.utils
+#: import os os
+#: import utils kivy.utils
+
+<Main>:
+    orientation: 'vertical'
+    RelativeLayout:
+        size_hint: [1, 0.5]
+        Button:
+            text: "DUDE!"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.25, 'center_y': 0.5}
+            on_press: self.text = ({"DUDE!", "SWEET!"}^{self.text}).pop()  #733th4X0r
+        Button:
+            text: "LOAD SONG"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            on_press: root.show_load()
+        Button:
+            text: "PLAY"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.75, 'center_y': 0.5}
+            on_press: fretboard.play_song()
+    RelativeLayout:
+        size_hint: [1, 0.5]
+        Fretboard:
+            id: fretboard
+            song: root.song
+
 
 <Fretboard>:
     orientation: "vertical"
-    size_hint_x: 0.9
-    size_hint_y: None
-    height: self.width / 4
+    size_hint: [0.9, None]
+    height: self.width / 14.14
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-    spacing: 5
+    spacing: 2
     canvas:
         Color:
-#            rgb: utils.get_color_from_hex('#964b00')
-            rgba: [0, 0, 0.75, 0.5]
+            rgb: utils.get_color_from_hex('#964b00')
+#            rgba: [0, 0, 0.75, 0.5]
 		Rectangle:
 			pos: self.pos
 			size: self.size
+    String:
+        id: 1
+    String:
+        id: 2
+    String:
+        id: 3
+    String:
+        id: 4
+    String:
+        id: 5
+    String:
+        id: 6
 
 <String>:
     size_hint: [1, 1]
     canvas:
         Color:
-            rgba: [1, 0, 0, 0.5]
+            rgba: [0, 0, 0, 0]
 		Rectangle:
 			pos: self.pos
 			size: self.size
+
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+            path: os.getcwd()
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.selection)

@@ -5,14 +5,16 @@ from collections import Counter
 
 chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
 
+
 class KivyBeat:
-    def __init__(self, seconds: float, frets: list, notes: list=None):
+    def __init__(self, seconds: float, frets: list, notes: list = None):
         self.seconds = seconds
         self.frets = frets
         self.notes = notes
 
+
 class GPReader:
-    def __init__(self, file):
+    def __init__(self, file="tgr-nm-01-g1.gp5"):
         self.gp_song = guitarpro.parse(file)
         self.gp_key_sig = self._gp_key_sig_parser(self.gp_song)
         self.gp_tunings = self._gp_tuning_parser(self.gp_song)
@@ -38,8 +40,9 @@ class GPReader:
         pos, mode = gp_song.key.value
         return circ_of_fifths[mode][pos], modes[mode]
 
+
 class KivySongBuilder(GPReader):
-    def __init__(self, file):
+    def __init__(self, file="tgr-nm-01-g1.gp5"):
         super().__init__(file)
         self.song, self.song_data = self._build_song()
         self.key_sigs_per_measure = self._detect_song_key_signatures()
@@ -83,24 +86,28 @@ class KivySongBuilder(GPReader):
             - When Beat is a quarter note, beat.duration.time == 960.  No idea why.
 
         TODO:
-            - Flatten voices into one track? Safe to ignore completely? Create two "voice tracks" per
+            - Flatten voices into one track? Safe to ignore completely? Create two "voice tracks"
+            per
             track? This will mean every kivy fretboard will need input for 2 "voice tracks"?
-            - Figure out what's up with Measure.MeasureHeader.repeatAlternative.. maybe use GPX branch?
+            - Figure out what's up with Measure.MeasureHeader.repeatAlternative.. maybe use GPX
+            branch?
         '''
         track, track_data = [], []
         measure, repeat_group_data = [], []
 
         for gp_measure in gp_track.measures:
             measure_data = [gp_measure.header]
-            # For some reason there are 2 voices, second one holds default values and would otherwise
-            # add default beat.duration values that would get read as quarter note rests (in tgr-nm-01).
+            # For some reason there are 2 voices, second one holds default values and would
+            # otherwise
+            # add default beat.duration values that would get read as quarter note rests (in
+            # tgr-nm-01).
             for gp_voice in gp_measure.voices[:-1]:
                 for gp_beat in gp_voice.beats:
                     seconds = gp_beat.duration.time / 960 * (self.gp_song.tempo / 60) ** (-1)
 
                     frets, notes = [None] * 6, []
                     for gp_note in gp_beat.notes:
-                        frets[gp_note.string-1] = gp_note.value
+                        frets[gp_note.string - 1] = gp_note.value
 
                         octave, semitone = divmod(gp_note.realValue, 12)
                         note = chrom_scale[semitone]
@@ -141,7 +148,7 @@ class KivySongBuilder(GPReader):
             for beat in track:
                 seconds += beat.seconds
             min, sec = str(int(seconds // 60)), str(int(seconds % 60))
-            track_lengths .append(min + ":" + sec)
+            track_lengths.append(min + ":" + sec)
         return track_lengths
 
     def print_song(self):
@@ -156,13 +163,14 @@ class KivySongBuilder(GPReader):
             for j, measure in enumerate(track, 1):
                 header = measure[0]
                 print("Track {}  MeasureHeader {}  Measure {}".format(i, header.number, j))
-                print("isRepeatOpen: {}  repeatClose: {}  repeatAlternative: {}".format(header.isRepeatOpen,
-                                                                                        header.repeatClose,
-                                                                                        header.repeatAlternative))
+                print("isRepeatOpen: {}  repeatClose: {}  repeatAlternative: {}".format(
+                    header.isRepeatOpen,
+                    header.repeatClose,
+                    header.repeatAlternative))
                 for beat in measure[1:]:
                     print("\t", beat.frets, beat.notes, beat.seconds)
                     seconds += beat.seconds
-                header_time += header.length/960 * (self.gp_song.tempo / 60) ** (-1)
+                header_time += header.length / 960 * (self.gp_song.tempo / 60) ** (-1)
                 print("\t", "HeaderTime {}  CalcTime {}".format(header_time, seconds))
 
     def del_measures(self, start, stop=None):
@@ -222,7 +230,10 @@ class KivySongBuilder(GPReader):
                 seconds_counted_this_measure_1 += self._get_beat_length_1(beat)
                 seconds_counted_this_measure_2 += self._get_beat_length_2(measure, beat)
 
-            is_length_correct = isclose(seconds_this_measure, seconds_counted_this_measure_1, abs_tol=0.0001) and isclose(seconds_this_measure, seconds_counted_this_measure_2, abs_tol=0.0001)
+            is_length_correct = isclose(seconds_this_measure, seconds_counted_this_measure_1,
+                                        abs_tol=0.0001) and isclose(seconds_this_measure,
+                                                                    seconds_counted_this_measure_2,
+                                                                    abs_tol=0.0001)
         return is_length_correct
 
     def _get_beat_length_1(self, beat):
@@ -254,18 +265,18 @@ class KivySongBuilder(GPReader):
     def _detect_track_key_signatures(self, gp_track):
         track_keys = []
         note_filter = {
-            "C":     0b100000000000,
+            "C": 0b100000000000,
             "C#/Db": 0b010000000000,
-            "D":     0b001000000000,
+            "D": 0b001000000000,
             "D#/Eb": 0b000100000000,
-            "E":     0b000010000000,
-            "F":     0b000001000000,
+            "E": 0b000010000000,
+            "F": 0b000001000000,
             "F#/Gb": 0b000000100000,
-            "G":     0b000000010000,
+            "G": 0b000000010000,
             "G#/Ab": 0b000000001000,
-            "A":     0b000000000100,
+            "A": 0b000000000100,
             "A#/Bb": 0b000000000010,
-            "B":     0b000000000001,
+            "B": 0b000000000001,
         }
         note_to_int = {
             "C": 2048, "C#/Db": 1024, "D": 512, "D#/Eb": 256,
@@ -273,18 +284,18 @@ class KivySongBuilder(GPReader):
             "G#/Ab": 8, "A": 4, "A#/Bb": 2, "B": 1,
         }
         maj_filter = {
-            'c_maj':  0b101011010101,
+            'c_maj': 0b101011010101,
             'cs_maj': 0b110101101010,
-            'd_maj':  0b011010110101,
+            'd_maj': 0b011010110101,
             'ds_maj': 0b101101011010,
-            'e_maj':  0b010110101101,
-            'f_maj':  0b101011010110,
+            'e_maj': 0b010110101101,
+            'f_maj': 0b101011010110,
             'fs_maj': 0b010101101011,
-            'g_maj':  0b101010110101,
+            'g_maj': 0b101010110101,
             'gs_maj': 0b110101011010,
-            'a_maj':  0b011010101101,
+            'a_maj': 0b011010101101,
             'as_maj': 0b101101010110,
-            'b_maj':  0b010110101011,
+            'b_maj': 0b010110101011,
         }
         maj_to_int = {
             'c_maj': 2773, 'cs_maj': 3434, 'd_maj': 1717, 'ds_maj': 2906,
@@ -319,9 +330,12 @@ class KivySongBuilder(GPReader):
         return track_keys
 
     def _note_counter(self):
+        '''Create 2 dictionaries per track to map each note to its total number of occurences and
+        total number of seconds.  For eventual use in key signature detection.'''
         note_counts = []
         for track in self.song:
-            track_note_counts, track_note_seconds = {n: 0 for n in chrom_scale}, {n: 0 for n in chrom_scale}
+            track_note_counts, track_note_seconds = {n: 0 for n in chrom_scale}, {n: 0 for n in
+                                                                                  chrom_scale}
             for beat in track:
                 for note in beat.notes:
                     track_note_counts[note] += 1
@@ -337,12 +351,12 @@ def test_key_sig_eval():
         'e_maj': 1453, 'f_maj': 2774, 'fs_maj': 1387, 'g_maj': 2741,
         'gs_maj': 3418, 'a_maj': 1709, 'as_maj': 2902, 'b_maj': 1451,
 
-        'c_harm_min': 2905, 'cs_harm_min': 3500,'d_harm_min': 1750,'ds_harm_min': 875,
-        'e_harm_min': 2485, 'f_harm_min': 3290,  'fs_harm_min': 1645, 'g_harm_min': 2870,
+        'c_harm_min': 2905, 'cs_harm_min': 3500, 'd_harm_min': 1750, 'ds_harm_min': 875,
+        'e_harm_min': 2485, 'f_harm_min': 3290, 'fs_harm_min': 1645, 'g_harm_min': 2870,
         'gs_harm_min': 1435, 'a_harm_min': 2765, 'as_harm_min': 3430, 'b_harm_min': 1715,
 
-        'c_mel_min': 2901, 'cs_mel_min': 3498,'d_mel_min': 1749,'ds_mel_min': 2922,
-        'e_mel_min': 1461, 'f_mel_min': 2778,  'fs_mel_min': 1389, 'g_mel_min': 2742,
+        'c_mel_min': 2901, 'cs_mel_min': 3498, 'd_mel_min': 1749, 'ds_mel_min': 2922,
+        'e_mel_min': 1461, 'f_mel_min': 2778, 'fs_mel_min': 1389, 'g_mel_min': 2742,
         'gs_mel_min': 1371, 'a_mel_min': 2733, 'as_mel_min': 3414, 'b_mel_min': 1707,
     }
 
@@ -360,7 +374,7 @@ def test_key_sig_eval():
                 measure_num]:
                 key_sig_DFS(measure_num + 1, path + [path[-1]], num_changes, measure_count)
             else:
-                key_sig_DFS(measure_num+1, path+[key], num_changes+1, measure_count)
+                key_sig_DFS(measure_num + 1, path + [key], num_changes + 1, measure_count)
 
     def possible_keys(measure_filter):
         candidate_keys = []
@@ -368,7 +382,8 @@ def test_key_sig_eval():
             cur = measure_filter
             candidate_keys += [key]
             while mode_filter and cur:
-                # If there's a note in the measure that isn't in the key, remove key from candidates.
+                # If there's a note in the measure that isn't in the key, remove key from
+                # candidates.
                 if cur & 1 and not mode_filter & 1:
                     candidate_keys.pop()
                     break
@@ -395,7 +410,6 @@ def test_key_sig_eval():
     for i, measure_filter in enumerate(song_keys):
         candidates_per_measure.append(possible_keys(measure_filter))
 
-
     key_counter = Counter()
     for group in candidates_per_measure:
         key_counter += Counter(group)
@@ -418,9 +432,10 @@ def test_key_sig_eval():
         elif num_changes < min_changes:
             for key in candidates_per_measure[-measure_idx]:
                 if key == cur_key:
-                    heapq.heappush(pqueue, (num_changes, -measure_idx+1, key, path + [key]))
+                    heapq.heappush(pqueue, (num_changes, -measure_idx + 1, key, path + [key]))
                 else:
                     heapq.heappush(pqueue, (num_changes + 1, -measure_idx + 1, key, path + [key]))
+
 
 # TODO: Improve pruning/priority level by using repeat groups.
 def test_key_sig_A_star():
@@ -430,52 +445,26 @@ def test_key_sig_A_star():
         'gs_maj': 3418, 'a_maj': 1709, 'as_maj': 2902, 'b_maj': 1451,
 
         'c_harm_min': 2905, 'cs_harm_min': 3500, 'd_harm_min': 1750, 'ds_harm_min': 875,
-        'e_harm_min': 2485, 'f_harm_min': 3290,  'fs_harm_min': 1645, 'g_harm_min': 2870,
+        'e_harm_min': 2485, 'f_harm_min': 3290, 'fs_harm_min': 1645, 'g_harm_min': 2870,
         'gs_harm_min': 1435, 'a_harm_min': 2765, 'as_harm_min': 3430, 'b_harm_min': 1715,
 
-        'c_mel_min': 2901, 'cs_mel_min': 3498,'d_mel_min': 1749,'ds_mel_min': 2922,
-        'e_mel_min': 1461, 'f_mel_min': 2778,  'fs_mel_min': 1389, 'g_mel_min': 2742,
+        'c_mel_min': 2901, 'cs_mel_min': 3498, 'd_mel_min': 1749, 'ds_mel_min': 2922,
+        'e_mel_min': 1461, 'f_mel_min': 2778, 'fs_mel_min': 1389, 'g_mel_min': 2742,
         'gs_mel_min': 1371, 'a_mel_min': 2733, 'as_mel_min': 3414, 'b_mel_min': 1707,
     }
     filter_to_mode = {
-        2773: 'c_maj',
-        3434: 'cs_maj',
-        1717: 'd_maj',
-        2906: 'ds_maj',
-        1453: 'e_maj',
-        2774: 'f_maj',
-        1387: 'fs_maj',
-        2741: 'g_maj',
-        3418: 'gs_maj',
-        1709: 'a_maj',
-        2902: 'as_maj',
-        1451: 'b_maj',
-        2905: 'c_harm_min',
-        3500: 'cs_harm_min',
-        1750: 'd_harm_min',
-        875: 'ds_harm_min',
-        2485: 'e_harm_min',
-        3290: 'f_harm_min',
-        1645: 'fs_harm_min',
-        2870: 'g_harm_min',
-        1435: 'gs_harm_min',
-        2765: 'a_harm_min',
-        3430: 'as_harm_min',
-        1715: 'b_harm_min',
-        2901: 'c_mel_min',
-        3498: 'cs_mel_min',
-        1749: 'd_mel_min',
-        2922: 'ds_mel_min',
-        1461: 'e_mel_min',
-        2778: 'f_mel_min',
-        1389: 'fs_mel_min',
-        2742: 'g_mel_min',
-        1371: 'gs_mel_min',
-        2733: 'a_mel_min',
-        3414: 'as_mel_min',
-        1707: 'b_mel_min',
-        }
+        2773: 'c_maj', 3434: 'cs_maj', 1717: 'd_maj', 2906: 'ds_maj',
+        1453: 'e_maj', 2774: 'f_maj', 1387: 'fs_maj', 2741: 'g_maj',
+        3418: 'gs_maj', 1709: 'a_maj', 2902: 'as_maj', 1451: 'b_maj',
 
+        2905: 'c_harm_min', 3500: 'cs_harm_min', 1750: 'd_harm_min', 875: 'ds_harm_min',
+        2485: 'e_harm_min', 3290: 'f_harm_min', 1645: 'fs_harm_min', 2870: 'g_harm_min',
+        1435: 'gs_harm_min', 2765: 'a_harm_min', 3430: 'as_harm_min', 1715: 'b_harm_min',
+
+        2901: 'c_mel_min', 3498: 'cs_mel_min', 1749: 'd_mel_min', 2922: 'ds_mel_min',
+        1461: 'e_mel_min', 2778: 'f_mel_min', 1389: 'fs_mel_min', 2742: 'g_mel_min',
+        1371: 'gs_mel_min', 2733: 'a_mel_min', 3414: 'as_mel_min', 1707: 'b_mel_min',
+    }
 
     def flatten_key_sigs_per_measure():
         song_measure_filters = []
@@ -505,7 +494,8 @@ def test_key_sig_A_star():
         return graph
 
     song_measure_filters = flatten_key_sigs_per_measure()
-    measure_candidate_modes = [get_measure_candidate_modes(measure) for measure in song_measure_filters]
+    measure_candidate_modes = [get_measure_candidate_modes(measure) for measure in
+                               song_measure_filters]
     graph = build_graph(measure_candidate_modes)
     for mode_filter, cost in graph[0].items():
         graph[0][mode_filter] = 0
@@ -520,43 +510,42 @@ def test_key_sig_A_star():
         path_cost, measure_idx, cur_mode, path = heapq.heappop(pqueue)
 
         # Result.
-        if -measure_idx == len(graph)-1:
+        if -measure_idx == len(graph) - 1:
             paths.append(path[:])
             if path_cost < min_path_cost:
                 result = path
                 min_path_cost = path_cost
         # Next measure in graph is empty; advance at no cost.
-        elif not graph[-measure_idx+1]:
+        elif not graph[-measure_idx + 1]:
             next_node = (path_cost, measure_idx - 1, cur_mode, path + [cur_mode])
             heapq.heappush(pqueue, next_node)
-        # Travel.  No cost to travel when nbr == cur_key modes.
+        # Travel.  No cost to travel if not changing keys.
         else:
-            for nbr, min_cost_so_far in graph[-measure_idx+1].items():
-                edge_cost = bin(cur_mode^nbr).count("1")
+            for nbr, min_cost_so_far in graph[-measure_idx + 1].items():
+                edge_cost = bin(cur_mode ^ nbr).count("1")
                 if path_cost + edge_cost < min_cost_so_far:
                     # 9 results without =, 338,000 results with =...
-                    graph[-measure_idx+1][nbr] = path_cost + edge_cost
-                    next_node = (path_cost+edge_cost, measure_idx-1, nbr, path+[nbr])
+                    graph[-measure_idx + 1][nbr] = path_cost + edge_cost
+                    next_node = (path_cost + edge_cost, measure_idx - 1, nbr, path + [nbr])
                     heapq.heappush(pqueue, next_node)
-
+        '''Possible travel costs to number of occurrences overall:
+                2: 120, 4: 288, 6: 408, 8: 360, 10:84 '''
     print(result)
     print(len(paths))
 
     def custom_sort(path):
         return len(set(path))
+
     paths.sort(key=custom_sort)
 
     for j, mode in enumerate(paths[0]):
         print("{}: {}".format(j, filter_to_mode[mode]))
 
 
-
-
-
 # TODO: Clean this up:
 # Exports for kivy_app.py (plays track 1).
-# song = KivySongBuilder()
+song = KivySongBuilder()
 # track = song.song[0]
 # strings = song.gp_song.tracks[0].strings
 
-
+song.print_song_data()
