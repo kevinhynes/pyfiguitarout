@@ -14,7 +14,7 @@ class KivyBeat:
 
 
 class GPReader:
-    def __init__(self, file="tgr-nm-01-g1.gp5"):
+    def __init__(self, file):
         self.gp_song = guitarpro.parse(file)
         self.gp_key_sig = self._gp_key_sig_parser(self.gp_song)
         self.gp_tunings = self._gp_tuning_parser(self.gp_song)
@@ -42,9 +42,10 @@ class GPReader:
 
 
 class KivySongBuilder(GPReader):
-    def __init__(self, file="tgr-nm-01-g1.gp5"):
+    def __init__(self, file):
         super().__init__(file)
         self.song, self.song_data = self._build_song()
+        self.song_data_no_repeat = self._strip_repeat_groups()
         self.key_sigs_per_measure = self._detect_song_key_signatures()
         self.note_counts = self._note_counter()
         # Might not need functions associated with all_beats_captured.
@@ -172,6 +173,7 @@ class KivySongBuilder(GPReader):
                     seconds += beat.seconds
                 header_time += header.length / 960 * (self.gp_song.tempo / 60) ** (-1)
                 print("\t", "HeaderTime {}  CalcTime {}".format(header_time, seconds))
+            return
 
     def del_measures(self, start, stop=None):
         '''
@@ -343,6 +345,36 @@ class KivySongBuilder(GPReader):
             note_counts.append([track_note_counts, track_note_seconds])
         return note_counts
 
+    def _strip_repeat_groups(self):
+        stripped_song_data = []
+        for track_data in self.song_data:
+            stripped_track_data = []
+            nxt_measure = 1
+            for measure in track_data:
+                header = measure[0]
+                if header.number == nxt_measure:
+                    stripped_track_data.append(measure)
+                    nxt_measure += 1
+            stripped_song_data.append(stripped_track_data)
+        return stripped_song_data
+
+    def print_song_data_no_repeat(self):
+        for i, track in enumerate(self.song_data_no_repeat, 1):
+            seconds = 0
+            header_time = 0
+            for j, measure in enumerate(track, 1):
+                header = measure[0]
+                print("Track {}  MeasureHeader {}  Measure {}".format(i, header.number, j))
+                print("isRepeatOpen: {}  repeatClose: {}  repeatAlternative: {}".format(
+                    header.isRepeatOpen,
+                    header.repeatClose,
+                    header.repeatAlternative))
+                for beat in measure[1:]:
+                    print("\t", beat.frets, beat.notes, beat.seconds)
+                    seconds += beat.seconds
+                header_time += header.length / 960 * (self.gp_song.tempo / 60) ** (-1)
+                print("\t", "HeaderTime {}  CalcTime {}".format(header_time, seconds))
+        return
 
 # WORK IN PROGRESS.  Best way to find key signature(s) of song...?
 def test_key_sig_eval():
@@ -517,7 +549,7 @@ def test_key_sig_A_star():
                 min_path_cost = path_cost
         # Next measure in graph is empty; advance at no cost.
         elif not graph[-measure_idx + 1]:
-            next_node = (path_cost, measure_idx - 1, cur_mode, path + [cur_mode])
+            next_node = (path_cost, measure_idx-1, cur_mode, path+[cur_mode])
             heapq.heappush(pqueue, next_node)
         # Travel.  No cost to travel if not changing keys.
         else:
@@ -526,7 +558,7 @@ def test_key_sig_A_star():
                 if path_cost + edge_cost < min_cost_so_far:
                     # 9 results without =, 338,000 results with =...
                     graph[-measure_idx + 1][nbr] = path_cost + edge_cost
-                    next_node = (path_cost + edge_cost, measure_idx - 1, nbr, path + [nbr])
+                    next_node = (path_cost+edge_cost, measure_idx-1, nbr, path+[nbr])
                     heapq.heappush(pqueue, next_node)
         '''Possible travel costs to number of occurrences overall:
                 2: 120, 4: 288, 6: 408, 8: 360, 10:84 '''
@@ -543,9 +575,5 @@ def test_key_sig_A_star():
 
 
 # TODO: Clean this up:
-# Exports for kivy_app.py (plays track 1).
-song = KivySongBuilder()
+# song = KivySongBuilder()
 # track = song.song[0]
-# strings = song.gp_song.tracks[0].strings
-
-song.print_song_data()

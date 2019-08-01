@@ -12,6 +12,7 @@ Config.set('graphics', 'width', '800')
 Config.set('graphics', 'height', '300')
 
 from gp_to_kivy import KivySongBuilder
+# from spt_connect_user import spt_play_song, spt_restart
 import random, time
 
 
@@ -30,6 +31,9 @@ class Main(BoxLayout):
         print("Main.load()... filepath: {}".format(filepath))
         self.song = KivySongBuilder(filepath[0])
         self.dismiss_popup()
+
+    def print_song_data(self):
+        self.song.print_song_data_no_repeat()
 
 
 class LoadDialog(FloatLayout):
@@ -119,10 +123,14 @@ class Fretboard(BoxLayout):
             self.ids[str(string)].play_note(fret_num)
 
     def play_song(self):
-        # import spt_connect_user  # Terrible... but this is starting playback of spotify track
         track1 = self.song.song[0]
         self.track = track1
         self.start = time.time()
+        # spt_play_song(self.song)
+        self._play_song()
+
+    def restart_song(self):
+        # spt_restart()
         self._play_song()
 
     def _play_song(self, seconds=None):

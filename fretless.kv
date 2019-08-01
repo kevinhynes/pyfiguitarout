@@ -8,18 +8,24 @@
         Button:
             text: "DUDE!"
             size_hint: [0.2, 0.5]
-            pos_hint: {'center_x': 0.25, 'center_y': 0.5}
+            pos_hint: {'center_x': 0.2, 'center_y': 0.5}
             on_press: self.text = ({"DUDE!", "SWEET!"}^{self.text}).pop()  #733th4X0r
         Button:
             text: "LOAD SONG"
             size_hint: [0.2, 0.5]
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            pos_hint: {'center_x': 0.4, 'center_y': 0.5}
             on_press: root.show_load()
         Button:
             text: "PLAY"
             size_hint: [0.2, 0.5]
-            pos_hint: {'center_x': 0.75, 'center_y': 0.5}
+            pos_hint: {'center_x': 0.6, 'center_y': 0.5}
             on_press: fretboard.play_song()
+        Button:
+            text: "DATA"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.8, 'center_y': 0.5}
+            on_press: root.print_song_data()
+
     RelativeLayout:
         size_hint: [1, 0.5]
         Fretboard:

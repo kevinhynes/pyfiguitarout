@@ -93,64 +93,64 @@ class Fretboard(BoxLayout):
                 self.canvas.add(Rectangle(size=[4, self.height], pos=[fret_pos, self.y]))
 
 
-# class String(FloatLayout):
-#     rect = ObjectProperty(None)
-#
-#     def __init__(self, num, note_val, **kwargs):
-#         super(String, self).__init__(**kwargs)
-#         self._num = num
-#         self.note_val = note_val
-#         with self.canvas:
-#             self.rect = Rectangle(source="cover.jpg", pos=self.pos, size=self.size)
-#         self.bind(pos=self.redraw, size=self.redraw)
-#
-#     def redraw(self, args):
-#         self.rect.size = self.size
-#         self.rect.pos = self.pos
+class String(FloatLayout):
+    rect = ObjectProperty(None)
 
-
-class String(Widget):
     def __init__(self, num, note_val, **kwargs):
         super(String, self).__init__(**kwargs)
-        self.num = num
+        self._num = num
         self.note_val = note_val
-        fret_colors = {
-            "red": [1, 0, 0, 1],
-            "orange": [1, 0.5, 0, 1],
-            "yellow": [1, 1, 0, 1],
-            "green": [0, 1, 0, 1],
-            "blue": [0, 0, 1, 1],
-            "indigo": [0.3, 0, 0.5, 1],
-            "violet": [0.8, 0, 0.8, 1],
-            "black": [0, 0, 0, 1]
-        }
+        with self.canvas:
+            self.rect = Rectangle(source="cover.jpg", pos=self.pos, size=self.size)
+        self.bind(pos=self.redraw, size=self.redraw)
+
+    def redraw(self, args):
+        self.rect.size = self.size
+        self.rect.pos = self.pos
 
 
-        temperament = 2**(1/12)  # Ratio of fret[i]/fret[i+1] for 12-tone equal temperament.
-        notes = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
-        for fret_num in range(25):
-            octave, semitone = divmod(self.note_val+fret_num, 12)
-            note = notes[semitone]
-            color = key_sig_color_map.get(note, "black")
-            fret = Fret(fret_color=fret_colors[color], size_hint_x=(1 / temperament ** fret_num),
-                        text=str(fret_num))
-            if fret_num == 0:
-                fret.size_hint_x = fret.size_hint_x * 0.3
-            self.add_widget(fret, index=fret_num)
-        self.active_fret = self.children[0]
-
-        # Kivy adds boxes to the left.  Flip this so first fret is on the left.
-        # This does not work exactly as expected; fret 0 is still self.children[24].
-        # Should not be manipulating self.children directly, but cannot find a work around.
-        self.children[:] = self.children[::-1]
-
-    def draw_frets(self, fret_num):
-        if self.active_fret:
-            self.active_fret.canvas.clear()
-        # Need to use [24-fret_num] because BoxLayout stores its children right to left.
-        if fret_num is not None:
-            self.active_fret = self.children[24-fret_num]
-            self.active_fret.color_fret()
+# class String(Widget):
+#     def __init__(self, num, note_val, **kwargs):
+#         super(String, self).__init__(**kwargs)
+#         self.num = num
+#         self.note_val = note_val
+#         fret_colors = {
+#             "red": [1, 0, 0, 1],
+#             "orange": [1, 0.5, 0, 1],
+#             "yellow": [1, 1, 0, 1],
+#             "green": [0, 1, 0, 1],
+#             "blue": [0, 0, 1, 1],
+#             "indigo": [0.3, 0, 0.5, 1],
+#             "violet": [0.8, 0, 0.8, 1],
+#             "black": [0, 0, 0, 1]
+#         }
+#
+#
+#         temperament = 2**(1/12)  # Ratio of fret[i]/fret[i+1] for 12-tone equal temperament.
+#         notes = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
+#         for fret_num in range(25):
+#             octave, semitone = divmod(self.note_val+fret_num, 12)
+#             note = notes[semitone]
+#             color = key_sig_color_map.get(note, "black")
+#             fret = Fret(fret_color=fret_colors[color], size_hint_x=(1 / temperament ** fret_num),
+#                         text=str(fret_num))
+#             if fret_num == 0:
+#                 fret.size_hint_x = fret.size_hint_x * 0.3
+#             self.add_widget(fret, index=fret_num)
+#         self.active_fret = self.children[0]
+#
+#         # Kivy adds boxes to the left.  Flip this so first fret is on the left.
+#         # This does not work exactly as expected; fret 0 is still self.children[24].
+#         # Should not be manipulating self.children directly, but cannot find a work around.
+#         self.children[:] = self.children[::-1]
+#
+#     def draw_frets(self, fret_num):
+#         if self.active_fret:
+#             self.active_fret.canvas.clear()
+#         # Need to use [24-fret_num] because BoxLayout stores its children right to left.
+#         if fret_num is not None:
+#             self.active_fret = self.children[24-fret_num]
+#             self.active_fret.color_fret()
 
 
 class Fret(Label):
