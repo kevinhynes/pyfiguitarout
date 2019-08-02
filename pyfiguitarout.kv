@@ -1,28 +1,44 @@
 #: import os os
 
-Main:
-    BoxLayout:
-        orientation: "vertical"
-        RelativeLayout:
-            Button:
-                text: "LOAD SONG"
-                size_hint: [0.25, 0.5]
-                pos_hint: {'center_x': 0.25, 'center_y': 0.5}
-                on_press: root.show_load()
-            Button:
-                text: "PLAY"
-                size_hint: [0.25, 0.5]
-                pos_hint: {'center_x': 0.75, 'center_y': 0.5}
-                on_press: fretboard.play_song(self)
+
+<Main>:
+    orientation: "vertical"
+    RelativeLayout:
+        size_hint: [1, 0.5]
+        Button:
+            text: "DUDE!"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.2, 'center_y': 0.5}
+            on_press: self.text = ({"DUDE!", "SWEET!"}^{self.text}).pop()
+        Button:
+            text: "LOAD SONG"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.4, 'center_y': 0.5}
+            on_press: root.show_load()
+        Button:
+            text: "PLAY"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.6, 'center_y': 0.5}
+            on_press: fretboard.play_song(self)
+        Button:
+            text: "DATA"
+            size_hint: [0.2, 0.5]
+            pos_hint: {'center_x': 0.8, 'center_y': 0.5}
+            on_press: root.print_song_data()
+
+    RelativeLayout:
+        size_hint: [1, 0.5]
         Fretboard:
             id: fretboard
             song: root.song
-            orientation: "vertical"
-            size_hint_y: None
-            size_hint_x: 0.9
-            spacing: 2
-            pos_hint: {"center_x": 0.5, "center_y": 0.5}
-            height: self.width / 3
+
+<Fretboard>:
+    orientation: "vertical"
+    size_hint: [0.9, None]
+    spacing: 2
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    height: self.width / 14.14
+
 
 <LoadDialog>:
     BoxLayout:

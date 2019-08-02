@@ -346,6 +346,7 @@ class KivySongBuilder(GPReader):
         return note_counts
 
     def _strip_repeat_groups(self):
+        '''Removes repeat groups from song_data and saves it for later.'''
         stripped_song_data = []
         for track_data in self.song_data:
             stripped_track_data = []
@@ -359,6 +360,7 @@ class KivySongBuilder(GPReader):
         return stripped_song_data
 
     def print_song_data_no_repeat(self):
+        '''Pretty prints stripped_song_data from _strip_repeat_groups().'''
         for i, track in enumerate(self.song_data_no_repeat, 1):
             seconds = 0
             header_time = 0

@@ -12,8 +12,8 @@ Config.set('graphics', 'width', '800')
 Config.set('graphics', 'height', '300')
 
 from gp_to_kivy import KivySongBuilder
-from spt_connect_user import spt_play_song
-import random, time
+# from spt_connect_user import spt_play_song
+import random, time, timeit
 
 
 class Main(BoxLayout):
@@ -49,9 +49,7 @@ class Fretboard(BoxLayout):
         self.fret_bars = InstructionGroup()
         self.inlays = InstructionGroup()
         self.beat_num = 0
-        with self.canvas:
-            Color(0, 0, 0.75, 0.5)
-            self.background = Rectangle(size=self.size, pos=self.pos)
+        self.background = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_canvas, pos=self._update_canvas)
 
     def _update_canvas(self, instance, value):
@@ -117,6 +115,11 @@ class Fretboard(BoxLayout):
                 self.inlays.add(Ellipse(size=[d, d], pos=[x_pos - d / 2, y_pos2 - d / 2]))
         self.canvas.add(self.inlays)
 
+    def _clear_frets(self):
+        for i in range(1, 7):
+            self.ids[str(i)]._play_note(None)
+
+
     def play_notes(self):
         for string in range(1, 7):
             fret_num = random.randrange(25)
@@ -125,8 +128,9 @@ class Fretboard(BoxLayout):
     def play_song(self):
         track1 = self.song.song[0]
         self.track = track1
-        self.start = time.time()
-        spt_play_song(self.song)
+        self.start1 = time.time()
+        self.start2 = timeit.default_timer()
+        # spt_play_song(self.song)
         self._play_song()
 
     def restart_song(self):
@@ -136,11 +140,15 @@ class Fretboard(BoxLayout):
     def _play_song(self, seconds=None):
         # Clock will pass beat.seconds as an argument, it is not needed.
         beat = self.track[self.beat_num]
+        self._play_beat(beat.frets)
         self.beat_num += 1
         if self.beat_num == len(self.track):
-            print("Total Time: ", time.time() - self.start)
+            end1 = time.time()
+            end2 = timeit.default_timer()
+            print("Total Time (time): ", end1 - self.start1)
+            print("Total Time (timeit): ", end2 - self.start2)
+            self._clear_frets()
             return
-        self._play_beat(beat.frets)
         Clock.schedule_once(self._play_song, beat.seconds)
 
     def _play_beat(self, frets):
@@ -149,36 +157,30 @@ class Fretboard(BoxLayout):
 
 
 class String(Widget):
-    def __init__(self, active_fret=0, *args, **kwargs):
+    def __init__(self, active_fret=None, *args, **kwargs):
         super().__init__(**kwargs)
         self.active_fret = active_fret
         self.active_rect = InstructionGroup()
-        with self.canvas:
-            Color(0, 0, 0, 0)
-            self.background = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_canvas, pos=self._update_canvas)
 
     def _update_canvas(self, instance, value):
-        self._update_background(instance, value)
         self._update_note(instance, value)
 
-    def _update_background(self, instance, value):
-        self.background.pos = self.pos
-        self.background.size = self.size
-
     def _update_note(self, instance, value):
+        self.active_rect.clear()
+        if self.active_fret is None:
+            return
         left, right = self.parent.fret_ranges[self.active_fret]
         width = right - left
         x_pos = left
-        self.active_rect.clear()
-        self.active_rect.add(Color(1, 1, 1, 0.5))
+        self.active_rect.add(Color(1, 1, 1, 0.2))
         self.active_rect.add(Rectangle(size=[width, self.height], pos=[x_pos, self.y]))
         self.canvas.add(self.active_rect)
 
+    def _clear_note(self):
+        self.active_rect.clear()
+
     def _play_note(self, fret_num):
-        if fret_num is None:
-            self.active_rect.clear()
-            return
         self.active_fret = fret_num
         self._update_note(None, None)
 

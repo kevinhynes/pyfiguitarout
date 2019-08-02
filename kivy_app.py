@@ -10,14 +10,16 @@ from kivy.config import Config
 # Config.set("graphics", "kivy_clock", "interrupt")
 # Config.set("graphics", "maxfps", 90)
 # ClockBaseInterrupt.interrupt_next_only = False
+Config.set('graphics', 'width', '800')
+Config.set('graphics', 'height', '300')
 
 from gp_to_kivy import KivySongBuilder
 from music_theory import key_sig_color_map
-from spt_connect_user import spt_play_song
-import time, os
+# from spt_connect_user import spt_play_song
+import time, timeit
 
 
-class Main(FloatLayout):
+class Main(BoxLayout):
     song = ObjectProperty(None)
 
     def dismiss_popup(self):
@@ -32,6 +34,9 @@ class Main(FloatLayout):
         print("Main.load()... filepath: {}".format(filepath))
         self.song = KivySongBuilder(filepath[0])
         self.dismiss_popup()
+
+    def print_song_data(self):
+        self.song.print_song_data_no_repeat()
 
 
 class LoadDialog(FloatLayout):
@@ -56,20 +61,24 @@ class Fretboard(BoxLayout):
             self.add_widget(String(num=string.number, note_val=string.value))
 
     def play_song(self, instance):
-        spt_play_song(self.song)
-        self.start = time.time()
+        # spt_play_song(self.song)
+        self.start1 = time.time()
+        self.start2 = timeit.default_timer()
         self._play_song()
 
     def _play_song(self, instance=None):
         beat = self.tracks[0][self.beat_num]
+        self._play_beat(beat.frets)
         self.beat_num += 1
         if self.beat_num == len(self.tracks[0]):
-            print("Total Time: ", time.time() - self.start)
+            end1 = time.time()
+            end2 = timeit.default_timer()
+            print("Total Time (time): ", end1 - self.start1)
+            print("Total Time (timeit): ", end2 - self.start2)
             return
-        self.play_beat(beat.frets)
         Clock.schedule_once(self._play_song, beat.seconds)
 
-    def play_beat(self, these_notes):
+    def _play_beat(self, these_notes):
         # Kivy adds boxes below, so self.children[0] points to top string.
         # Reverse the list so the right string gets played.
         for string, fret_num in zip(self.children[::-1], these_notes):
@@ -143,7 +152,9 @@ class Fret(Label):
 
 
 class PyFiGUItarOutApp(App):
-    pass
+    def build(self):
+        main = Main()
+        return main
 
 
 if __name__ == '__main__':

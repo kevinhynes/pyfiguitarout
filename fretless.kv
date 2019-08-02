@@ -9,7 +9,7 @@
             text: "DUDE!"
             size_hint: [0.2, 0.5]
             pos_hint: {'center_x': 0.2, 'center_y': 0.5}
-            on_press: self.text = ({"DUDE!", "SWEET!"}^{self.text}).pop()  #733th4X0r
+            on_press: self.text = ({"DUDE!", "SWEET!"}^{self.text}).pop()
         Button:
             text: "LOAD SONG"
             size_hint: [0.2, 0.5]
@@ -32,13 +32,12 @@
             id: fretboard
             song: root.song
 
-
 <Fretboard>:
     orientation: "vertical"
     size_hint: [0.9, None]
-    height: self.width / 14.14
-    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     spacing: 2
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    height: self.width / 14.14
     canvas:
         Color:
             rgb: utils.get_color_from_hex('#964b00')
@@ -61,12 +60,7 @@
 
 <String>:
     size_hint: [1, 1]
-    canvas:
-        Color:
-            rgba: [0, 0, 0, 0]
-		Rectangle:
-			pos: self.pos
-			size: self.size
+
 
 <LoadDialog>:
     BoxLayout:
