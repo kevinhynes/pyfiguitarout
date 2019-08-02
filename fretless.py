@@ -12,7 +12,7 @@ Config.set('graphics', 'width', '800')
 Config.set('graphics', 'height', '300')
 
 from gp_to_kivy import KivySongBuilder
-# from spt_connect_user import spt_play_song
+from spt_connect_user import spt_play_song
 import random, time, timeit
 
 
@@ -130,7 +130,7 @@ class Fretboard(BoxLayout):
         self.track = track1
         self.start1 = time.time()
         self.start2 = timeit.default_timer()
-        # spt_play_song(self.song)
+        spt_play_song(self.song)
         self._play_song()
 
     def restart_song(self):

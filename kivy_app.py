@@ -15,7 +15,7 @@ Config.set('graphics', 'height', '300')
 
 from gp_to_kivy import KivySongBuilder
 from music_theory import key_sig_color_map
-# from spt_connect_user import spt_play_song
+from spt_connect_user import spt_play_song
 import time, timeit
 
 
@@ -61,7 +61,7 @@ class Fretboard(BoxLayout):
             self.add_widget(String(num=string.number, note_val=string.value))
 
     def play_song(self, instance):
-        # spt_play_song(self.song)
+        spt_play_song(self.song)
         self.start1 = time.time()
         self.start2 = timeit.default_timer()
         self._play_song()
