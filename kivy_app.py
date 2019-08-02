@@ -13,6 +13,7 @@ from kivy.config import Config
 
 from gp_to_kivy import KivySongBuilder
 from music_theory import key_sig_color_map
+from spt_connect_user import spt_play_song
 import time, os
 
 
@@ -55,7 +56,7 @@ class Fretboard(BoxLayout):
             self.add_widget(String(num=string.number, note_val=string.value))
 
     def play_song(self, instance):
-        # import spt_connect_user  # Terrible... but this is starting playback of spotify track
+        spt_play_song(self.song)
         self.start = time.time()
         self._play_song()
 
