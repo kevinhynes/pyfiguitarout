@@ -5,7 +5,7 @@ Kivy + PyGuitarPro + Spotify + Music Theory
 Create a fretboard visualization with a GuitarPro5 file (.gp5) and a Spotify premium account.
 
 Get your Spotify token here: https://developer.spotify.com/console/get-current-user/
-with user-modify-playback-state scope access. 
+with user-modify-playback-state scope access. Paste into spt_connect_user.py.
 
 Two experimental versions: run kivy_app.py or fretless.py.
 
