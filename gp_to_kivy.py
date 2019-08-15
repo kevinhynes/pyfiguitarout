@@ -501,9 +501,11 @@ def test_key_sig_A_star():
     }
 
     def flatten_key_sigs_per_measure():
+
         song_measure_filters = []
         for track1, track2 in zip(*song.key_sigs_per_measure):
             song_measure_filters.append(track1 | track2)
+        print(song_measure_filters)
         return song_measure_filters
 
     def get_measure_candidate_modes(measure):
@@ -534,15 +536,16 @@ def test_key_sig_A_star():
     for mode_filter, cost in graph[0].items():
         graph[0][mode_filter] = 0
 
-    pqueue = [(0, -1, mode_filter, [mode_filter]) for mode_filter in graph[0].keys()]
+
+    pqueue = [(0, 0, -1, mode_filter, [mode_filter]) for mode_filter in graph[0].keys()]
+    print(pqueue)
     heapq.heapify(pqueue)
     result = None
     min_path_cost = float("inf")
     paths = []
     while pqueue:
         # measure_idx is negative so that nodes closer to finishing have priority.
-        path_cost, measure_idx, cur_mode, path = heapq.heappop(pqueue)
-
+        path_cost, num_changes, measure_idx, cur_mode, path = heapq.heappop(pqueue)
         # Result.
         if -measure_idx == len(graph) - 1:
             paths.append(path[:])
@@ -551,7 +554,7 @@ def test_key_sig_A_star():
                 min_path_cost = path_cost
         # Next measure in graph is empty; advance at no cost.
         elif not graph[-measure_idx + 1]:
-            next_node = (path_cost, measure_idx-1, cur_mode, path+[cur_mode])
+            next_node = (path_cost, num_changes, measure_idx-1, cur_mode, path+[cur_mode])
             heapq.heappush(pqueue, next_node)
         # Travel.  No cost to travel if not changing keys.
         else:
@@ -560,7 +563,8 @@ def test_key_sig_A_star():
                 if path_cost + edge_cost < min_cost_so_far:
                     # 9 results without =, 338,000 results with =...
                     graph[-measure_idx + 1][nbr] = path_cost + edge_cost
-                    next_node = (path_cost+edge_cost, measure_idx-1, nbr, path+[nbr])
+                    key_change = cur_mode == nbr
+                    next_node = (path_cost+edge_cost, num_changes+key_change, measure_idx-1, nbr, path+[nbr])
                     heapq.heappush(pqueue, next_node)
         '''Possible travel costs to number of occurrences overall:
                 2: 120, 4: 288, 6: 408, 8: 360, 10:84 '''
@@ -572,10 +576,10 @@ def test_key_sig_A_star():
 
     paths.sort(key=custom_sort)
 
-    for j, mode in enumerate(paths[0]):
-        print("{}: {}".format(j, filter_to_mode[mode]))
+    for path in paths:
+        for j, mode in enumerate(path):
+            print("{}: {}".format(j, filter_to_mode[mode]))
 
+song = KivySongBuilder("tgr-nm-01-g1.gp5")
 
-# TODO: Clean this up:
-# song = KivySongBuilder()
-# track = song.song[0]
+test_key_sig_A_star()

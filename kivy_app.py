@@ -7,9 +7,9 @@ from kivy.uix.label import Label
 from kivy.clock import Clock, ClockBaseInterrupt
 from kivy.graphics import Rectangle, Color
 from kivy.config import Config
-# Config.set("graphics", "kivy_clock", "interrupt")
-# Config.set("graphics", "maxfps", 90)
-# ClockBaseInterrupt.interrupt_next_only = False
+Config.set("graphics", "kivy_clock", "interrupt")
+Config.set("graphics", "maxfps", 90)
+ClockBaseInterrupt.interrupt_next_only = False
 Config.set('graphics', 'width', '800')
 Config.set('graphics', 'height', '300')
 
@@ -21,6 +21,9 @@ import time, timeit
 
 class Main(BoxLayout):
     song = ObjectProperty(None)
+
+    # def on_song(self, instance, value):
+    #     self.song.del_measures(72)
 
     def dismiss_popup(self):
         self._popup.dismiss()
@@ -36,7 +39,7 @@ class Main(BoxLayout):
         self.dismiss_popup()
 
     def print_song_data(self):
-        self.song.print_song_data_no_repeat()
+        self.song.print_song_data()
 
 
 class LoadDialog(FloatLayout):
@@ -68,6 +71,7 @@ class Fretboard(BoxLayout):
 
     def _play_song(self, instance=None):
         beat = self.tracks[0][self.beat_num]
+        Clock.schedule_once(self._play_song, beat.seconds)
         self._play_beat(beat.frets)
         self.beat_num += 1
         if self.beat_num == len(self.tracks[0]):
@@ -76,7 +80,6 @@ class Fretboard(BoxLayout):
             print("Total Time (time): ", end1 - self.start1)
             print("Total Time (timeit): ", end2 - self.start2)
             return
-        Clock.schedule_once(self._play_song, beat.seconds)
 
     def _play_beat(self, these_notes):
         # Kivy adds boxes below, so self.children[0] points to top string.

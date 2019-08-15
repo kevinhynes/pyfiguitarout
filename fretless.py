@@ -6,18 +6,24 @@ from kivy.uix.popup import Popup
 from kivy.properties import ObjectProperty
 from kivy.graphics import Color, Rectangle, Ellipse
 from kivy.graphics.instructions import InstructionGroup
-from kivy.clock import Clock
+from kivy.clock import Clock, ClockBaseInterrupt
 from kivy.config import Config
 Config.set('graphics', 'width', '800')
 Config.set('graphics', 'height', '300')
+Config.set("graphics", "kivy_clock", "interrupt")
+Config.set("graphics", "maxfps", 90)
+ClockBaseInterrupt.interrupt_next_only = False
 
 from gp_to_kivy import KivySongBuilder
-from spt_connect_user import spt_play_song
+# from spt_connect_user import spt_play_song
 import random, time, timeit
 
 
 class Main(BoxLayout):
     song = ObjectProperty(None)
+
+    # def on_song(self, instance, value):
+    #     self.song.del_measures(72)
 
     def dismiss_popup(self):
         self._popup.dismiss()
@@ -33,7 +39,7 @@ class Main(BoxLayout):
         self.dismiss_popup()
 
     def print_song_data(self):
-        self.song.print_song_data_no_repeat()
+        self.song.print_song_data()
 
 
 class LoadDialog(FloatLayout):
@@ -130,7 +136,7 @@ class Fretboard(BoxLayout):
         self.track = track1
         self.start1 = time.time()
         self.start2 = timeit.default_timer()
-        spt_play_song(self.song)
+        # spt_play_song(self.song)
         self._play_song()
 
     def restart_song(self):
@@ -140,6 +146,7 @@ class Fretboard(BoxLayout):
     def _play_song(self, seconds=None):
         # Clock will pass beat.seconds as an argument, it is not needed.
         beat = self.track[self.beat_num]
+        Clock.schedule_once(self._play_song, beat.seconds)
         self._play_beat(beat.frets)
         self.beat_num += 1
         if self.beat_num == len(self.track):
@@ -149,7 +156,6 @@ class Fretboard(BoxLayout):
             print("Total Time (timeit): ", end2 - self.start2)
             self._clear_frets()
             return
-        Clock.schedule_once(self._play_song, beat.seconds)
 
     def _play_beat(self, frets):
         for i, fret_num in enumerate(frets, 1):
