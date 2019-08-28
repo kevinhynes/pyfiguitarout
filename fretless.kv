@@ -1,36 +1,72 @@
 #: import os os
 #: import utils kivy.utils
+#: import SlideTransition kivy.uix.screenmanager.SlideTransition
+
+ScreenSwitcher:
+    Main:
+    KeySigDisplay:
 
 <Main>:
-    orientation: 'vertical'
-    RelativeLayout:
-        size_hint: [1, 0.5]
-        Button:
-            text: "DUDE!"
-            size_hint: [0.2, 0.5]
-            pos_hint: {'center_x': 0.2, 'center_y': 0.5}
-            on_press: self.text = ({"DUDE!", "SWEET!"}^{self.text}).pop()
-        Button:
-            text: "LOAD SONG"
-            size_hint: [0.2, 0.5]
-            pos_hint: {'center_x': 0.4, 'center_y': 0.5}
-            on_press: root.show_load()
-        Button:
-            text: "PLAY"
-            size_hint: [0.2, 0.5]
-            pos_hint: {'center_x': 0.6, 'center_y': 0.5}
-            on_press: fretboard.play_song()
-        Button:
-            text: "DATA"
-            size_hint: [0.2, 0.5]
-            pos_hint: {'center_x': 0.8, 'center_y': 0.5}
-            on_press: root.print_song_data()
+    name: "main"
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint: [1, 0.5]
+            padding: 20
+            spacing: 20
+            Button:
+                id: key_sig_chooser
+                text: "GO TO KEY SIG DISPLAY"
+                text_size: [self.width, None]
+                halign: "center"
+                size_hint: [0.15, 0.5]
+                pos_hint: {"center_y": 0.5}
+                on_press:
+                    app.root.transition = SlideTransition(direction='left')
+                    app.root.current = "key_sig_display"
+            Button:
+                text: "LOAD SONG"
+                text_size: [self.width, None]
+                halign: "center"
+                size_hint: [0.15, 0.5]
+                pos_hint: {"center_y": 0.5}
+                on_press: root.show_load_song()
+            Button:
+                text: "PLAY"
+                size_hint: [0.15, 0.5]
+                pos_hint: {"center_y": 0.5}
+                text_size: [self.width, None]
+                halign: "center"
+                on_press: fretboard.play_song()
+            Button:
+                text: "DATA"
+                size_hint: [0.15, 0.5]
+                pos_hint: {"center_y": 0.5}
+                text_size: [self.width, None]
+                halign: "center"
+                on_press: root.print_song_data()
+    #        RelativeLayout:
+    #            size_hint: [1, 0.5]
+    #            ScrollView:
+    #                pos_hint: {'center_x': 1/6, 'center_y': 0.5}
+    #                size_hint: [None, None]
+    #                do_scroll_x: False
+    #                RootNoteScrollContainer:
+        RelativeLayout:
+            size_hint: [1, 0.5]
+            Fretboard:
+                id: fretboard
+                song: root.song
 
-    RelativeLayout:
-        size_hint: [1, 0.5]
-        Fretboard:
-            id: fretboard
-            song: root.song
+
+#<RootNoteScrollContainer>:
+#    cols: 1
+#    size_hint_y: None
+#    height: self.minimum_height
+#    padding: 10
+#    spacing: 20
+
 
 <Fretboard>:
     orientation: "vertical"
@@ -45,6 +81,9 @@
 		Rectangle:
 			pos: self.pos
 			size: self.size
+    # From http://inclem.net/2019/06/20/kivy/widget_interactions_between_python_and_kv/:
+    # You cannot set up widget ids from Python code, if you write e.g. w = Widget(id='some_name')
+    # this will not crash but the id will not be available in any ids dictionary.
     String:
         id: 1
     String:
@@ -60,6 +99,86 @@
 
 <String>:
     size_hint: [1, 1]
+
+<KeySigDisplay>:
+    name: "key_sig_display"
+    fretboard: fretboard_with_tuner
+    BoxLayout:
+        orientation: "vertical"
+        BoxLayout:
+            orientation: "horizontal"
+            padding: 20
+            spacing: 20
+            size_hint: [1, 0.5]
+            Button:
+                text: "GO TO MAIN"
+                text_size: [self.width, None]
+                halign: "center"
+                size_hint: [0.15, 0.5]
+                pos_hint: {'center_y': 0.5}
+                on_press:
+                    app.root.transition = SlideTransition(direction='right')
+                    app.root.current = "main"
+            Button:
+                id: key_sig_chooser
+                text: "CHOOSE KEY SIG"
+                text_size: [self.width, None]
+                halign: "center"
+                size_hint: [0.15, 0.5]
+                pos_hint: {'center_y': 0.5}
+                on_press: root.show_load_key_sig()
+        FloatLayout:
+            size_hint: [1, 0.5]
+            FretboardWithTuner:
+                id: fretboard_with_tuner
+
+
+<FretboardWithTuner>:
+    orientation: "vertical"
+    size_hint: [0.9, None]
+    spacing: 2
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    height: self.width / 14.14
+
+    # From http://inclem.net/2019/06/20/kivy/widget_interactions_between_python_and_kv/:
+    # You cannot set up widget ids from Python code, if you write e.g. w = Widget(id='some_name')
+    # this will not crash but the id will not be available in any ids dictionary.
+    StringWithTuner:
+        id: 1
+    StringWithTuner:
+        id: 2
+    StringWithTuner:
+        id: 3
+    StringWithTuner:
+        id: 4
+    StringWithTuner:
+        id: 5
+    StringWithTuner:
+        id: 6
+
+<StringWithTuner>:
+    string_tuning: tuner
+    size_hint: [1, 1]
+    canvas:
+        Color:
+            rgb: utils.get_color_from_hex('#964b00')
+#            rgba: [0, 0, 0.75, 0.5]
+		Rectangle:
+			size: self.size
+			pos: self.pos
+    Tuner:
+        id: tuner
+        size_hint: [0.03, 1]
+        right: root.x
+        y: root.y
+        height: root.height
+        font_size: self.height/1.1
+        halign: "center"
+        sync_height: True
+        values: 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
+        on_text:
+            print("from Kivy Tuner on_text: ", self.text, flush=True)
+            print("from Kivy Tuner on_text: ", root.string_tuning.text, flush=True)
 
 
 <LoadDialog>:
@@ -79,3 +198,33 @@
             Button:
                 text: "Load"
                 on_release: root.load(filechooser.selection)
+
+
+<KeySigChooser>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        BoxLayout:
+            orientation: "horizontal"
+            Spinner:
+                id: root_note
+                text: "CHOOSE ROOT NOTE"
+                text_size: [self.width, None]
+                halign: "center"
+                size_hint: [0.15, 0.5]
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                values: 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
+            Spinner:
+                id: mode
+                text: "CHOOSE MODE"
+                text_size: [self.width, None]
+                halign: "center"
+                size_hint: [0.15, 0.5]
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                values: ['Major', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Minor','Locrian']
+        Button:
+            text: "Submit"
+            on_release: root.load_key_sig(root_note.text + " " + mode.text)
+
+

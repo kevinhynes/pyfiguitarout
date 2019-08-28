@@ -1,7 +1,7 @@
 import guitarpro
 from math import isclose
 import heapq
-from collections import Counter
+from collections import Counter, defaultdict
 
 chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
 
@@ -47,6 +47,7 @@ class KivySongBuilder(GPReader):
         self.song, self.song_data = self._build_song()
         self.song_data_no_repeat = self._strip_repeat_groups()
         self.key_sigs_per_measure = self._detect_song_key_signatures()
+        self.key_sigs_per_measure_nr = self._detect_song_key_signatures_nr()
         self.note_counts = self._note_counter()
         # Might not need functions associated with all_beats_captured.
         self.all_beats_captured = self._sum_and_check_song()
@@ -331,6 +332,65 @@ class KivySongBuilder(GPReader):
                 this_measure_key.clear()
         return track_keys
 
+    def _detect_song_key_signatures_nr(self):
+        song_keys = []
+        for track in self.gp_song.tracks:
+            track_keys = self._detect_track_key_signatures_nr(track)
+            song_keys.append(track_keys)
+        return song_keys
+
+    def _detect_track_key_signatures_nr(self, gp_track):
+        track_keys = []
+        note_filter = {
+            "C": 0b100000000000,
+            "C#/Db": 0b010000000000,
+            "D": 0b001000000000,
+            "D#/Eb": 0b000100000000,
+            "E": 0b000010000000,
+            "F": 0b000001000000,
+            "F#/Gb": 0b000000100000,
+            "G": 0b000000010000,
+            "G#/Ab": 0b000000001000,
+            "A": 0b000000000100,
+            "A#/Bb": 0b000000000010,
+            "B": 0b000000000001,
+        }
+        note_to_int = {
+            "C": 2048, "C#/Db": 1024, "D": 512, "D#/Eb": 256,
+            "E": 128, "F": 64, "F#/Gb": 32, "G": 16,
+            "G#/Ab": 8, "A": 4, "A#/Bb": 2, "B": 1,
+        }
+        maj_filter = {
+            'c_maj': 0b101011010101,
+            'cs_maj': 0b110101101010,
+            'd_maj': 0b011010110101,
+            'ds_maj': 0b101101011010,
+            'e_maj': 0b010110101101,
+            'f_maj': 0b101011010110,
+            'fs_maj': 0b010101101011,
+            'g_maj': 0b101010110101,
+            'gs_maj': 0b110101011010,
+            'a_maj': 0b011010101101,
+            'as_maj': 0b101101010110,
+            'b_maj': 0b010110101011,
+        }
+        maj_to_int = {
+            'c_maj': 2773, 'cs_maj': 3434, 'd_maj': 1717, 'ds_maj': 2906,
+            'e_maj': 1453, 'f_maj': 2774, 'fs_maj': 1387, 'g_maj': 2741,
+            'gs_maj': 3418, 'a_maj': 1709, 'as_maj': 2902, 'b_maj': 1451,
+        }
+
+        for gp_measure in gp_track.measures:
+            key_filter = 0
+            for voice in gp_measure.voices[:-1]:
+                for gp_beat in voice.beats:
+                    for gp_note in gp_beat.notes:
+                        octave, semitone = divmod(gp_note.realValue, 12)
+                        note = chrom_scale[semitone]
+                        key_filter |= note_filter[note]
+            track_keys.append(key_filter)
+        return track_keys
+
     def _note_counter(self):
         '''Create 2 dictionaries per track to map each note to its total number of occurences and
         total number of seconds.  For eventual use in key signature detection.'''
@@ -379,98 +439,6 @@ class KivySongBuilder(GPReader):
         return
 
 # WORK IN PROGRESS.  Best way to find key signature(s) of song...?
-def test_key_sig_eval():
-    mode_filters = {
-        'c_maj': 2773, 'cs_maj': 3434, 'd_maj': 1717, 'ds_maj': 2906,
-        'e_maj': 1453, 'f_maj': 2774, 'fs_maj': 1387, 'g_maj': 2741,
-        'gs_maj': 3418, 'a_maj': 1709, 'as_maj': 2902, 'b_maj': 1451,
-
-        'c_harm_min': 2905, 'cs_harm_min': 3500, 'd_harm_min': 1750, 'ds_harm_min': 875,
-        'e_harm_min': 2485, 'f_harm_min': 3290, 'fs_harm_min': 1645, 'g_harm_min': 2870,
-        'gs_harm_min': 1435, 'a_harm_min': 2765, 'as_harm_min': 3430, 'b_harm_min': 1715,
-
-        'c_mel_min': 2901, 'cs_mel_min': 3498, 'd_mel_min': 1749, 'ds_mel_min': 2922,
-        'e_mel_min': 1461, 'f_mel_min': 2778, 'fs_mel_min': 1389, 'g_mel_min': 2742,
-        'gs_mel_min': 1371, 'a_mel_min': 2733, 'as_mel_min': 3414, 'b_mel_min': 1707,
-    }
-
-    def key_sig_DFS(measure_num, path, num_changes, measure_count):
-        global min_changes
-        if measure_num == measure_count:
-            paths.append([num_changes, path[:]])
-            min_changes = min(min_changes, num_changes)
-            return
-        if num_changes > min_changes:
-            return
-
-        for key in candidates_per_measure[measure_num]:
-            if path[-1] in candidates_per_measure[measure_num] or not candidates_per_measure[
-                measure_num]:
-                key_sig_DFS(measure_num + 1, path + [path[-1]], num_changes, measure_count)
-            else:
-                key_sig_DFS(measure_num + 1, path + [key], num_changes + 1, measure_count)
-
-    def possible_keys(measure_filter):
-        candidate_keys = []
-        for key, mode_filter in mode_filters.items():
-            cur = measure_filter
-            candidate_keys += [key]
-            while mode_filter and cur:
-                # If there's a note in the measure that isn't in the key, remove key from
-                # candidates.
-                if cur & 1 and not mode_filter & 1:
-                    candidate_keys.pop()
-                    break
-                mode_filter = mode_filter >> 1
-                cur = cur >> 1
-        return candidate_keys
-
-    def rank_possible_keys(key):
-        return key_popularity[key]
-
-    # Print original data for single track.
-    for track in song.key_sigs_per_measure:
-        print(track)
-        break
-
-    # Flatten tracks into one list of key filters.
-    song_keys = []
-    for track1, track2 in zip(*song.key_sigs_per_measure):
-        song_keys.append(track1 | track2)
-    print(song_keys)
-
-    # Analyze possible key sigs per measure.
-    candidates_per_measure = []
-    for i, measure_filter in enumerate(song_keys):
-        candidates_per_measure.append(possible_keys(measure_filter))
-
-    key_counter = Counter()
-    for group in candidates_per_measure:
-        key_counter += Counter(group)
-    key_popularity = {key: i for i, (key, val) in enumerate(key_counter.most_common())}
-    for candidates in candidates_per_measure:
-        candidates.sort(key=rank_possible_keys)
-        print(candidates)
-    print(list(key_popularity.items()))
-
-    paths = []
-    min_changes = float("inf")
-    pqueue = [(0, -1, key, [key]) for key in candidates_per_measure[0]]
-    heapq.heapify(pqueue)
-    while pqueue:
-        num_changes, measure_idx, cur_key, path = heapq.heappop(pqueue)
-        if -measure_idx == len(candidates_per_measure):
-            paths.append(path)
-            min_changes = min(min_changes, num_changes)
-            break
-        elif num_changes < min_changes:
-            for key in candidates_per_measure[-measure_idx]:
-                if key == cur_key:
-                    heapq.heappush(pqueue, (num_changes, -measure_idx + 1, key, path + [key]))
-                else:
-                    heapq.heappush(pqueue, (num_changes + 1, -measure_idx + 1, key, path + [key]))
-
-
 # TODO: Improve pruning/priority level by using repeat groups.
 def test_key_sig_A_star():
     mode_filters = {
@@ -501,11 +469,9 @@ def test_key_sig_A_star():
     }
 
     def flatten_key_sigs_per_measure():
-
         song_measure_filters = []
-        for track1, track2 in zip(*song.key_sigs_per_measure):
+        for track1, track2 in zip(*song.key_sigs_per_measure_nr):
             song_measure_filters.append(track1 | track2)
-        print(song_measure_filters)
         return song_measure_filters
 
     def get_measure_candidate_modes(measure):
@@ -536,50 +502,57 @@ def test_key_sig_A_star():
     for mode_filter, cost in graph[0].items():
         graph[0][mode_filter] = 0
 
+    for i, node in enumerate(graph, 1):
+        print(i)
+        for key, val in node.items():
+            print(filter_to_mode[key])
 
-    pqueue = [(0, 0, -1, mode_filter, [mode_filter]) for mode_filter in graph[0].keys()]
-    print(pqueue)
+    pqueue = [(0, 0, 0, mode_filter, [mode_filter]) for mode_filter in graph[0].keys()]
     heapq.heapify(pqueue)
-    result = None
     min_path_cost = float("inf")
     paths = []
     while pqueue:
         # measure_idx is negative so that nodes closer to finishing have priority.
         path_cost, num_changes, measure_idx, cur_mode, path = heapq.heappop(pqueue)
         # Result.
-        if -measure_idx == len(graph) - 1:
-            paths.append(path[:])
+        if measure_idx == len(graph) - 1:
+            paths.append(path)
             if path_cost < min_path_cost:
-                result = path
                 min_path_cost = path_cost
         # Next measure in graph is empty; advance at no cost.
-        elif not graph[-measure_idx + 1]:
-            next_node = (path_cost, num_changes, measure_idx-1, cur_mode, path+[cur_mode])
+        elif not graph[measure_idx + 1]:
+            next_node = (path_cost, num_changes, measure_idx+1, cur_mode, path+[cur_mode])
             heapq.heappush(pqueue, next_node)
-        # Travel.  No cost to travel if not changing keys.
+        # Travel.  No cost to travel if not changing keys.1
         else:
-            for nbr, min_cost_so_far in graph[-measure_idx + 1].items():
+            for nbr, min_cost_so_far in graph[measure_idx + 1].items():
                 edge_cost = bin(cur_mode ^ nbr).count("1")
+                if nbr in path:
+                    edge_cost = 0
                 if path_cost + edge_cost < min_cost_so_far:
-                    # 9 results without =, 338,000 results with =...
-                    graph[-measure_idx + 1][nbr] = path_cost + edge_cost
+                    # 9 results without =, 337,920 results with =...
+                    graph[measure_idx + 1][nbr] = path_cost + edge_cost
                     key_change = cur_mode == nbr
-                    next_node = (path_cost+edge_cost, num_changes+key_change, measure_idx-1, nbr, path+[nbr])
+                    next_node = (path_cost+edge_cost, num_changes+key_change, measure_idx+1, nbr, path+[nbr])
                     heapq.heappush(pqueue, next_node)
         '''Possible travel costs to number of occurrences overall:
                 2: 120, 4: 288, 6: 408, 8: 360, 10:84 '''
-    print(result)
-    print(len(paths))
 
+    print(len(paths))
     def custom_sort(path):
         return len(set(path))
 
     paths.sort(key=custom_sort)
 
-    for path in paths:
-        for j, mode in enumerate(path):
-            print("{}: {}".format(j, filter_to_mode[mode]))
+    master = []
+    for measure in zip(*paths):
+        keys = set()
+        for key_sig in measure:
+            keys.add(key_sig)
+        master.append(list(keys))
 
-song = KivySongBuilder("tgr-nm-01-g1.gp5")
+    for i, measure in enumerate(master, 1):
+        print("{}: {}".format(i, measure))
 
-test_key_sig_A_star()
+# song = KivySongBuilder("tgr-nm-01-g1.gp5")
+# test_key_sig_A_star()

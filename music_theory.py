@@ -29,10 +29,19 @@ modes = {'Major': 0, 'Dorian': 2, 'Phrygian': 4, 'Lydian': 5,
          'Mixolydian': 7, 'Minor': 9, 'Locrian': 11}
 
 def get_key_sig_color_map(note, mode):
+    # Representative of W-W-H-W-W-W-H (the major scale).
+    interval_sequence = deque([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1])
+
+    modes = {
+        'Major'  : 0, 'Dorian': 2, 'Phrygian': 4, 'Lydian': 5, 'Mixolydian': 7, 'Minor': 9,
+        'Locrian': 11}
+
+    chrom_scale = 'C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B'.split()
+
     mode_pattern = interval_sequence.copy()
     mode_pattern.rotate(-1*modes[mode])
 
-    note_pattern = notes.copy()
+    note_pattern = chrom_scale.copy()
     while note != note_pattern[0]:
         note_pattern.rotate(-1)
     notes_in_key = list(itertools.compress(note_pattern, mode_pattern))
@@ -40,7 +49,7 @@ def get_key_sig_color_map(note, mode):
     color_map = {note: color for note, color in zip(notes_in_key, roygbiv)}
     return color_map
 
-
+ 
 def generate_key_sigs():
     key_signatures_to_notes = {}
     notes_to_key_signatures = defaultdict(list)
